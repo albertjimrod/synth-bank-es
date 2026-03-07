@@ -1,0 +1,268 @@
+# configs/model_config.yaml
+# Configuración de modelos generativos y scoring
+
+synthetic_generation:
+  default_method: "ctgan"
+  random_seed: 42
+  versioning: true
+  
+  methods:
+    ctgan:
+      enabled: true
+      hyperparameters:
+        epochs: 300
+        batch_size: 500
+        generator_dim: [256, 256]
+        discriminator_dim: [256, 256]
+        generator_lr: 0.0002
+        discriminator_lr: 0.0002
+        discriminator_steps: 1
+        log_frequency: true
+        verbose: true
+      validation:
+        split: 0.2
+        early_stopping: true
+        patience: 50
+    
+    vae:
+      enabled: true
+      hyperparameters:
+        latent_dim: 128
+        encoder_layers: [512, 256, 128]
+        decoder_layers: [128, 256, 512]
+        epochs: 100
+        batch_size: 32
+        learning_rate: 0.001
+        beta: 1.0  # Para β-VAE
+        activation: "relu"
+        optimizer: "adam"
+      callbacks:
+        - early_stopping
+        - model_checkpoint
+        - reduce_lr_on_plateau
+    
+    copula:
+      enabled: true
+      type: "gaussian"  # o "vine", "student_t"
+      hyperparameters:
+        distribution: "norm"  # para marginales
+        default_distribution: "beta"  # fallback
+      correlation_method: "pearson"  # o "spearman", "kendall"
+    
+    tvae:
+      enabled: false
+      hyperparameters:
+        epochs: 300
+        batch_size: 500
+        compress_dims: [128, 128]
+        decompress_dims: [128, 128]
+        embedding_dim: 128
+        loss_factor: 2
+    
+    timeseries_gan:
+      enabled: true
+      use_case: "transactions"
+      hyperparameters:
+        sequence_length: 30  # días
+        hidden_dim: 100
+        num_layers: 3
+        epochs: 500
+        learning_rate: 0.0001
+
+constraints:
+  business_rules:
+    # Reglas de negocio específicas
+    - name: "edad_minima"
+      column: "edad"
+      constraint: ">=18"
+    
+    - name: "saldo_positivo"
+      column: "saldo_cuenta"
+      constraint: ">=0"
+    
+    - name: "ratio_deuda_ingreso"
+      formula: "deuda_total / ingresos_anuales"
+      constraint: "<=0.4"  # Máximo 40% de endeudamiento
+    
+    - name: "coherencia_credito"
+      condition: "if tipo_credito == 'hipoteca' then importe_credito >= 50000"
+    
+    - name: "edad_jubilacion"
+      condition: "if situacion_laboral == 'jubilado' then edad >= 60"
+  
+  statistical_constraints:
+    # Preservar distribuciones específicas del INE
+    - column: "provincia"
+      distribution: "categorical"
+      source: "INE_padron_2024"
+      preserve: true
+    
+    - column: "edad"
+      distribution: "normal"
+      params:
+        mean: 45.3
+        std: 18.7
+      preserve: true
+    
+    - column: "ingresos_anuales"
+      distribution: "lognormal"
+      params:
+        mu: 10.3
+        sigma: 0.5
+      preserve: true
+  
+  regulatory_compliance:
+    # Normativa Banco de España
+    - name: "CIRBE_limits"
+      rule: "sum(creditos_activos) <= 5 * patrimonio_neto"
+    
+    - name: "scoring_minimo"
+      rule: "scoring_crediticio >= 300"
+    
+    - name: "ratio_solvencia"
+      rule: "patrimonio / activos >= 0.08"
+
+post_processing:
+  # Ajustes finales a datos generados
+  rounding:
+    edad: 0  # entero
+    ingresos_anuales: -2  # centenas
+    saldo_cuenta: 2  # céntimos
+    importe_credito: -3  # miles
+  
+  clipping:
+    edad: [18, 100]
+    ingresos_anuales: [0, 500000]
+    saldo_cuenta: [0, 1000000]
+    scoring_crediticio: [300, 900]
+  
+  categorical_mapping:
+    provincia:
+      ensure_valid: true
+      allowed_values: ["Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza"]
+    
+    nivel_estudios:
+      ensure_valid: true
+      allowed_values: ["sin_estudios", "primaria", "secundaria", "fp", "universitario"]
+
+scoring_models:
+  default_model: "xgboost"
+  target_variable: "default_probability"
+  
+  models:
+    logistic_regression:
+      enabled: true
+      hyperparameters:
+        penalty: "l2"
+        C: 1.0
+        solver: "lbfgs"
+        max_iter: 1000
+      features:
+        numerical: ["edad", "ingresos_anuales", "saldo_cuenta", "antiguedad_meses"]
+        categorical: ["provincia", "nivel_estudios", "situacion_laboral"]
+    
+    xgboost:
+      enabled: true
+      hyperparameters:
+        n_estimators: 100
+        max_depth: 6
+        learning_rate: 0.1
+        subsample: 0.8
+        colsample_bytree: 0.8
+        objective: "binary:logistic"
+        eval_metric: "auc"
+        early_stopping_rounds: 10
+      feature_importance: true
+      shap_values: true
+    
+    random_forest:
+      enabled: true
+      hyperparameters:
+        n_estimators: 200
+        max_depth: 10
+        min_samples_split: 20
+        min_samples_leaf: 10
+        max_features: "sqrt"
+        class_weight: "balanced"
+    
+    neural_network:
+      enabled: true
+      architecture:
+        layers: [128, 64, 32, 16]
+        activation: "relu"
+        dropout: 0.3
+        output_activation: "sigmoid"
+      training:
+        epochs: 50
+        batch_size: 32
+        learning_rate: 0.001
+        optimizer: "adam"
+        loss: "binary_crossentropy"
+
+feature_engineering:
+  demographic_features:
+    - edad
+    - provincia
+    - nivel_estudios
+    - situacion_laboral
+    - tipo_vivienda
+    - personas_hogar
+  
+  financial_features:
+    - ingresos_anuales
+    - ingresos_mensuales
+    - saldo_cuenta_corriente
+    - saldo_cuenta_ahorro
+    - importe_credito_total
+    - num_productos_activos
+  
+  behavioral_features:
+    - num_transacciones_mes
+    - importe_medio_transaccion
+    - num_devoluciones
+    - num_descubiertos
+    - ratio_ahorro_ingreso
+  
+  derived_features:
+    - name: "ratio_deuda_ingreso"
+      formula: "deuda_total / ingresos_anuales"
+    - name: "capacidad_ahorro"
+      formula: "ingresos_mensuales - gastos_medios"
+    - name: "estabilidad_ingresos"
+      formula: "std(ingresos_ultimos_12_meses) / mean(ingresos_ultimos_12_meses)"
+    - name: "scoring_comportamental"
+      formula: "weighted_sum(num_transacciones, saldo_medio, antiguedad)"
+
+evaluation_config:
+  statistical_tests:
+    - ks_test
+    - chi_square_test
+    - wasserstein_distance
+    - jensen_shannon_divergence
+  
+  ml_efficacy:
+    - tstr  # Train on Synthetic, Test on Real
+    - trts  # Train on Real, Test on Synthetic
+  
+  privacy_metrics:
+    - dcr  # Distance to Closest Record
+    - k_anonymity
+    - l_diversity
+  
+  business_metrics:
+    - credit_risk_distribution
+    - profitability_estimation
+    - regulatory_compliance_score
+
+model_versioning:
+  tracking: true
+  registry: "models/"
+  metadata:
+    - training_date
+    - data_version
+    - hyperparameters
+    - performance_metrics
+    - author
+  backup:
+    enabled: true
+    retention_days: 180

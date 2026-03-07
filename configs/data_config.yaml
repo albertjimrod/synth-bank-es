@@ -1,0 +1,191 @@
+# configs/data_config.yaml
+# Configuración del pipeline de datos
+
+data_sources:
+  ine:
+    base_url: "https://www.ine.es/jaxiT3/Tabla.htm"
+    datasets:
+      padron:
+        url: "https://www.ine.es/jaxiT3/files/t/es/csv_bdsc/2853.csv"
+        description: "Padrón municipal de habitantes"
+        update_frequency: "anual"
+      epf:
+        url: "https://www.ine.es/prodyser/microdatos.htm"
+        description: "Encuesta de Presupuestos Familiares"
+        update_frequency: "anual"
+      eff:
+        description: "Encuesta Financiera de las Familias"
+        source: "Banco de España"
+        url: "https://www.bde.es/bde/es/areas/estadis/Otras_estadistic/Encuesta_Financi/"
+        update_frequency: "trianual"
+  
+  banco_espana:
+    base_url: "https://www.bde.es/webbde/es/estadis/"
+    datasets:
+      tipos_interes:
+        description: "Tipos de interés TAE"
+        update_frequency: "mensual"
+      cirbe:
+        description: "Central de Información de Riesgos"
+        access: "restricted"
+
+data_pipeline:
+  raw:
+    path: "data/raw"
+    retention_days: 365
+  
+  interim:
+    path: "data/interim"
+    retention_days: 180
+  
+  processed:
+    path: "data/processed"
+    retention_days: 90
+  
+  synthetic:
+    path: "data/synthetic"
+    versioning: true
+    format: "csv"
+    compression: "gzip"
+
+data_quality:
+  validation_rules:
+    - name: "no_nulls_in_key_columns"
+      columns: ["client_id", "dni", "fecha_nacimiento"]
+      rule: "not_null"
+    
+    - name: "valid_age_range"
+      columns: ["edad"]
+      rule: "range"
+      min: 18
+      max: 100
+    
+    - name: "valid_income"
+      columns: ["ingresos_anuales"]
+      rule: "positive"
+    
+    - name: "valid_province"
+      columns: ["provincia"]
+      rule: "in_list"
+      values: ["Madrid", "Barcelona", "Valencia", "Sevilla", "Zaragoza"]
+  
+  outlier_detection:
+    method: "iqr"
+    threshold: 3.0
+    columns: ["ingresos_anuales", "saldo_cuenta", "importe_credito"]
+
+transformations:
+  encoding:
+    categorical_columns:
+      - provincia
+      - nivel_estudios
+      - situacion_laboral
+      - tipo_vivienda
+    method: "label"  # o "onehot"
+  
+  scaling:
+    numerical_columns:
+      - ingresos_anuales
+      - saldo_cuenta
+      - importe_credito
+      - edad
+    method: "standard"  # o "minmax", "robust"
+  
+  feature_engineering:
+    derived_features:
+      - name: "ratio_deuda_ingreso"
+        formula: "deuda_total / ingresos_anuales"
+      - name: "antiguedad_cliente_años"
+        formula: "(fecha_actual - fecha_alta).days / 365"
+      - name: "scoring_simple"
+        formula: "ingresos_anuales * 0.3 - deuda_total * 0.7"
+
+demographics:
+  # Distribución por provincias (INE 2024)
+  provinces:
+    Madrid:
+      population: 6779888
+      percentage: 14.3
+      avg_income: 35000
+    Barcelona:
+      population: 5743402
+      percentage: 12.1
+      avg_income: 32000
+    Valencia:
+      population: 2589312
+      percentage: 5.5
+      avg_income: 27000
+    Sevilla:
+      population: 1950219
+      percentage: 4.1
+      avg_income: 25000
+    Zaragoza:
+      population: 975896
+      percentage: 2.1
+      avg_income: 28000
+  
+  # Distribución por edad
+  age_distribution:
+    - range: [18, 25]
+      percentage: 12.0
+    - range: [26, 35]
+      percentage: 18.0
+    - range: [36, 45]
+      percentage: 22.0
+    - range: [46, 55]
+      percentage: 20.0
+    - range: [56, 65]
+      percentage: 15.0
+    - range: [66, 100]
+      percentage: 13.0
+  
+  # Distribución por nivel de estudios
+  education_level:
+    sin_estudios: 8.5
+    primaria: 15.0
+    secundaria: 30.0
+    fp: 20.0
+    universitario: 26.5
+  
+  # Distribución por situación laboral
+  employment_status:
+    ocupado: 65.0
+    desempleado: 12.0
+    jubilado: 18.0
+    estudiante: 5.0
+
+financial_profiles:
+  # Perfiles financieros típicos
+  conservative:
+    risk_tolerance: "low"
+    avg_savings_rate: 0.20
+    credit_usage: 0.30
+    investment_appetite: 0.10
+  
+  moderate:
+    risk_tolerance: "medium"
+    avg_savings_rate: 0.15
+    credit_usage: 0.50
+    investment_appetite: 0.30
+  
+  aggressive:
+    risk_tolerance: "high"
+    avg_savings_rate: 0.10
+    credit_usage: 0.70
+    investment_appetite: 0.60
+
+compliance:
+  gdpr:
+    anonymization_level: "high"
+    pii_fields:
+      - dni
+      - nombre
+      - apellidos
+      - email
+      - telefono
+      - direccion
+  
+  banco_espana:
+    cirbe_reporting: true
+    solvency_ratios: true
+    stress_testing: true

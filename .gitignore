@@ -1,0 +1,97 @@
+# Data files - raw microdata (large binary files, download from INE)
+data/raw/**
+!data/raw/**/.gitkeep
+
+# Synthetic output (generated at runtime)
+data/synthetic/**
+!data/synthetic/.gitkeep
+
+# Interim data
+data/interim/
+
+# Processed parquets are INCLUDED in the repo (small, ~11MB, needed to run without reprocessing)
+# data/processed/ → tracked intentionally
+
+# Large tabular outputs
+data/synthetic/*.csv
+*.xlsx
+*.xls
+*.feather
+
+# Models
+models/
+*.pkl
+*.h5
+*.pt
+*.pth
+*.onnx
+
+# Logs
+logs/
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# Jupyter Notebook
+.ipynb_checkpoints/
+*.ipynb_backup
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Environment variables
+.env
+.env.local
+
+# Streamlit
+streamlit_app/.streamlit/secrets.toml
+
+# Coverage
+.coverage
+htmlcov/
+.pytest_cache/
+
+# MyPy
+.mypy_cache/
+.dmypy.json
+dmypy.json
