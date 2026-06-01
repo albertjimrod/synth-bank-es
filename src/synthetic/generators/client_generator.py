@@ -12,7 +12,7 @@ import yaml
 import json
 from loguru import logger
 
-from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer
+from sdv.single_table import CTGANSynthesizer, GaussianCopulaSynthesizer, TVAESynthesizer
 from sdv.metadata import SingleTableMetadata
 
 
@@ -42,6 +42,7 @@ class ClientGenerator:
         self.metadata = None
         
         # Configurar logger
+        Path("logs/model_training").mkdir(parents=True, exist_ok=True)
         logger.add(
             f"logs/model_training/client_generator_{datetime.now():%Y%m%d_%H%M%S}.log",
             rotation="500 MB"
@@ -71,7 +72,11 @@ class ClientGenerator:
         """
         logger.info(f"Cargando datos reales desde: {data_path}")
         
-        df = pd.read_csv(data_path)
+        path = Path(data_path)
+        if path.suffix == '.parquet':
+            df = pd.read_parquet(data_path)
+        else:
+            df = pd.read_csv(data_path)
         logger.info(f"Datos cargados: {len(df)} registros, {len(df.columns)} columnas")
         
         # Validación básica
@@ -82,9 +87,12 @@ class ClientGenerator:
     def _validate_data(self, df: pd.DataFrame) -> None:
         """Validar que los datos cumplen requisitos mínimos."""
         required_columns = [
-            'edad', 'provincia', 'nivel_estudios', 'situacion_laboral',
+            'edad', 'nivel_estudios', 'situacion_laboral',
             'ingresos_anuales', 'saldo_cuenta'
         ]
+        # 'provincia' o 'ccaa' son válidos como columna geográfica
+        if 'provincia' not in df.columns and 'ccaa' not in df.columns:
+            required_columns.append('provincia')
         
         missing = set(required_columns) - set(df.columns)
         if missing:
@@ -142,8 +150,14 @@ class ClientGenerator:
                 default_distribution=self.config['hyperparameters']['default_distribution']
             )
         
+        elif self.method == 'vae':
+            self.synthesizer = TVAESynthesizer(
+                metadata=self.metadata,
+                epochs=self.config.get('hyperparameters', {}).get('epochs', 100),
+                verbose=self.config.get('hyperparameters', {}).get('verbose', True)
+            )
         else:
-            raise ValueError(f"Método no soportado: {self.method}")
+            raise ValueError(f"Método no soportado: {self.method}. Opciones: 'ctgan', 'copula', 'vae'")
         
         # Entrenar
         start_time = datetime.now()
