@@ -12,9 +12,9 @@ from pathlib import Path
 import warnings
 warnings.filterwarnings('ignore')
 
-BASE_DIR = Path(__file__).parent.parent
-RAW_DIR = BASE_DIR / "data" / "raw"
-OUT_DIR = BASE_DIR / "data" / "processed"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+RAW_DIR = PROJECT_ROOT / "data" / "raw"
+OUT_DIR = PROJECT_ROOT / "data" / "processed"
 
 # Configuración de archivos CSV
 CONFIG = {
