@@ -13,20 +13,6 @@ plotly>=5.17.0
 sdv>=1.9.0
 ctgan>=0.7.0
 
-# Deep learning
-tensorflow>=2.14.0
-torch>=2.1.0
-keras>=2.14.0
-
-# Data manipulation
-openpyxl>=3.1.0
-xlrd>=2.0.1
-
-# Web scraping & APIs
-requests>=2.31.0
-beautifulsoup4>=4.12.0
-lxml>=4.9.0
-
 # Configuration
 pyyaml>=6.0
 python-dotenv>=1.0.0
