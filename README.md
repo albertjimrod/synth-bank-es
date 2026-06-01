@@ -18,69 +18,37 @@ The result is a dataset that is statistically indistinguishable from real bankin
 
 ## Pipeline overview
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                         STAGE 1: INGEST                         │
-│                                                                 │
-│  INE Downloads:                                                 │
-│    ECV 2024  (living conditions)  → data/raw/ecv/               │
-│    EPF 2024  (family budgets)     → data/raw/epf/               │
-│    EPA 2025  (labour force)       → data/raw/epa/               │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                        STAGE 2: PROCESS                         │
-│                                                                 │
-│  src/data/processing/process_data.py                            │
-│    → Detects separators (tab/comma/semicolon)                   │
-│    → Maps raw INE column codes to readable names                │
-│    → Merges ECV + EPF + EPA into unified base                   │
-│    → Output: data/processed/*.parquet                           │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       STAGE 3: GENERATE                         │
-│                                                                 │
-│  Option A — Rule-based + parallel (large scale):                │
-│    src/synthetic/generators/generate_synthetic.py               │
-│    → Interactive CLI (n records, default rate, cores)           │
-│    → Generates full banking hierarchy per customer              │
-│    → Multiprocessing with configurable batch size               │
-│                                                                 │
-│  Option B — Generative model (SDV-based):                       │
-│    src/synthetic/generators/client_generator.py                 │
-│    → Trains CTGAN / GaussianCopula / VAE on processed data      │
-│    → Applies business constraints post-generation               │
-│    → Saves model + versioned metadata                           │
-│                                                                 │
-│  Output: data/synthetic/                                        │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                       STAGE 4: EVALUATE                         │
-│                                                                 │
-│  src/evaluation/statistical_tests.py                            │
-│    → Kolmogorov-Smirnov test (numeric distributions)            │
-│    → Chi-square test (categorical distributions)                │
-│    → Wasserstein distance                                       │
-│    → Jensen-Shannon divergence                                  │
-│    → Correlation matrix comparison                              │
-│    → HTML report generation                                     │
-└────────────────────────────┬────────────────────────────────────┘
-                             │
-                             ▼
-┌─────────────────────────────────────────────────────────────────┐
-│                     STAGE 5: WEB INTERFACE                      │
-│                                                                 │
-│  streamlit_app.py                                               │
-│    → Dashboard with summary metrics                             │
-│    → Interactive generator (upload data, pick method)           │
-│    → Real vs synthetic distribution comparison                  │
-│    → Model configuration panel                                  │
-└─────────────────────────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    A["📥 STAGE 1 — INGEST
+Descarga microdatos INE
+ECV 2024 · EPF 2024 · EPA 2025"] --> B
+
+    B["⚙️ STAGE 2 — PROCESS
+src/data/processing/process_data.py
+Detecta separadores · mapea columnas INE
+Merge ECV + EPF + EPA → parquet"] --> C
+
+    subgraph C["🔧 STAGE 3 — GENERATE"]
+        C1["Opción A — Rule-based
+generate_synthetic.py
+Multiprocessing · control tasa default
+Escala a millones de registros"]
+        C2["Opción B — SDV-based
+client_generator.py
+CTGAN · GaussianCopula · TVAE
+Constraints de negocio post-generación"]
+    end
+
+    C --> D["📊 STAGE 4 — EVALUATE
+src/evaluation/statistical_tests.py
+KS · Chi² · Wasserstein · JS divergence
+Correlation comparison · HTML report"]
+
+    D --> E["🌐 STAGE 5 — WEB INTERFACE
+streamlit_app.py
+Dashboard · Generador interactivo
+Comparación distribuciones · Config modelos"]
 ```
 
 ---
