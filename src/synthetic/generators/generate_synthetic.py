@@ -24,9 +24,9 @@ except ImportError:
     print("[WARN] SDV no instalado. Usando generación básica.")
 
 # === CONFIGURACIÓN ===
-DATA_DIR = Path(__file__).parent.parent / "/media/ion/4T/test"
-PROCESSED_DIR = DATA_DIR / "/home/ion/Documentos/synth_bank_es/synth_bank_es/data"
-OUTPUT_DIR = DATA_DIR / "synthetic"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent.parent
+PROCESSED_DIR = PROJECT_ROOT / "data" / "processed"
+OUTPUT_DIR = PROJECT_ROOT / "data" / "synthetic"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 # Datos de referencia España
