@@ -24,8 +24,8 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        'Get Help': 'https://github.com/tuusuario/synth_bank_es',
-        'Report a bug': "https://github.com/tuusuario/synth_bank_es/issues",
+        'Get Help': 'https://github.com/albertjimrod/synth-bank-es',
+        'Report a bug': "https://github.com/albertjimrod/synth-bank-es/issues",
         'About': "# synth_bank_es\nGenerador de datos sintéticos bancarios españoles"
     }
 )
@@ -189,8 +189,8 @@ def render_sidebar():
         
         ### 📚 Recursos
         
-        - [Documentación](https://github.com/tuusuario/synth_bank_es)
-        - [Reportar bug](https://github.com/tuusuario/synth_bank_es/issues)
+        - [Documentación](https://github.com/albertjimrod/synth-bank-es)
+        - [Reportar bug](https://github.com/albertjimrod/synth-bank-es/issues)
         - [Contacto](mailto:tu_email@example.com)
         """)
         
