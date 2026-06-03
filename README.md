@@ -4,12 +4,6 @@
 
 ---
 
-<div align="center">
-  <img src=".github/assets/portfolio.png" width="100%"/>
-</div>
-
----
-
 # synth-bank-es
 
 A full pipeline to generate **realistic synthetic banking datasets for the Spanish market**, trained on real microdata from official sources (INE — Instituto Nacional de Estadística). Designed for credit risk model development, regulatory compliance testing, and ML research where real customer data cannot be used.
